@@ -43,15 +43,6 @@ LOVE_LIGHT_DIRECTION = 0
 
 love.light = {}
 
-local function setStencil(func)
-	if func == nil then
-		love.graphics.setStencilTest()
-	else
-		love.graphics.stencil(func)
-		love.graphics.setStencilTest("greater", 0)
-	end
-end
-
 -- light world
 function love.light.newWorld()
 	local o = {}
@@ -200,7 +191,8 @@ function love.light.newWorld()
 						love.graphics.setCanvas(o.lights[i].shine)
 						love.graphics.clear(255, 255, 255)
 						love.graphics.setBlendMode("alpha")
-						setStencil(polyStencil)
+						love.graphics.stencil(polyStencil)
+						love.graphics.setStencilTest("greater", 0)
 						love.graphics.rectangle("fill", LOVE_LIGHT_TRANSLATE_X, LOVE_LIGHT_TRANSLATE_Y, love.graphics.getWidth(), love.graphics.getHeight())
 
 						lightsOnScreen = lightsOnScreen + 1
@@ -217,7 +209,7 @@ function love.light.newWorld()
 			-- update shadow
 			love.graphics.setShader()
 			love.graphics.setCanvas(o.shadow)
-			setStencil()
+			love.graphics.setStencilTest()
 			love.graphics.setColor(unpack(o.ambient))
 			love.graphics.setBlendMode("alpha")
 			love.graphics.rectangle("fill", LOVE_LIGHT_TRANSLATE_X, LOVE_LIGHT_TRANSLATE_Y, love.graphics.getWidth(), love.graphics.getHeight())
@@ -407,7 +399,7 @@ function love.light.newWorld()
 
 		love.graphics.setShader()
 		love.graphics.setBlendMode("alpha")
-		setStencil()
+		love.graphics.setStencilTest()
 		love.graphics.setCanvas(LOVE_LIGHT_LAST_BUFFER)
 
 		o.changed = false
@@ -1019,7 +1011,8 @@ function love.light.newBody(p, type, ...)
 				{o.width, o.height, 1.0, 1.0},
 				{0.0, o.height, 0.0, 1.0}
 			}
-			o.normalMesh = love.graphics.newMesh(o.normalVert, o.normal, "fan")
+			o.normalMesh = love.graphics.newMesh(o.normalVert, "fan")
+			o.normalMesh:setTexture(o.normal)
 		else
 			o.width = args[4] or 64
 			o.height = args[5] or 64
@@ -1391,8 +1384,9 @@ function love.light.newBody(p, type, ...)
 					{0.0, o.height, 0.0, 1.0}
 				}
 				if not o.shadowMesh then
-					o.shadowMesh = love.graphics.newMesh(o.shadowVert, o.img, "fan")
-					o.shadowMesh:setVertexColors(true)
+					o.shadowMesh = love.graphics.newMesh(o.shadowVert, "fan")
+					o.shadowMesh:setTexture(o.img)
+					o.shadowMesh:setAttributeEnabled("VertexColor", true)
 				end
 			else
 				o.width = 64
