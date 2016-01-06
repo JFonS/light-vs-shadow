@@ -71,8 +71,9 @@ function World:update()
 		if self.optionShadows and (self.isShadows or self.isLight) then
 			love.graphics.setShader(self.shader)
 
-			local lightsOnScreen = 0
 			LOVE_LIGHT_BODY = self.body
+
+			local lightsOnScreen = 0
 			for i, Light in pairs(self.lights) do
 				if Light.changed or self.changed then
 					if Light.x + Light.range > LOVE_LIGHT_TRANSLATE_X and Light.x - Light.range < love.graphics.getWidth() + LOVE_LIGHT_TRANSLATE_X
@@ -93,7 +94,7 @@ function World:update()
 						love.graphics.clear()
 
 						-- calculate shadows
-						LOVE_LIGHT_SHADOW_GEOMETRY = calculateShadows(LOVE_LIGHT_CURRENT, LOVE_LIGHT_BODY)
+						LOVE_LIGHT_SHADOW_GEOMETRY = calculateShadows(LOVE_LIGHT_CURRENT, self.body)
 
 						-- draw shadow
 						love.graphics.stencil(shadowStencil)
@@ -115,34 +116,34 @@ function World:update()
 							end
 						end
 
-						for k = 1, #LOVE_LIGHT_BODY do
-							if LOVE_LIGHT_BODY[k].alpha < 1.0 then
+						for k, Body in pairs(self.body) do
+							if Body.alpha < 1.0 then
 								love.graphics.setBlendMode("multiply")
-								love.graphics.setColor(LOVE_LIGHT_BODY[k].red, LOVE_LIGHT_BODY[k].green, LOVE_LIGHT_BODY[k].blue)
-								if LOVE_LIGHT_BODY[k].shadowType == "circle" then
-									love.graphics.circle("fill", LOVE_LIGHT_BODY[k].x - LOVE_LIGHT_BODY[k].ox, LOVE_LIGHT_BODY[k].y - LOVE_LIGHT_BODY[k].oy, LOVE_LIGHT_BODY[k].radius)
-								elseif LOVE_LIGHT_BODY[k].shadowType == "rectangle" then
-									love.graphics.rectangle("fill", LOVE_LIGHT_BODY[k].x - LOVE_LIGHT_BODY[k].ox, LOVE_LIGHT_BODY[k].y - LOVE_LIGHT_BODY[k].oy, LOVE_LIGHT_BODY[k].width, LOVE_LIGHT_BODY[k].height)
-								elseif LOVE_LIGHT_BODY[k].shadowType == "polygon" then
-									love.graphics.polygon("fill", unpack(LOVE_LIGHT_BODY[k].data))
+								love.graphics.setColor(Body.red, Body.green, Body.blue)
+								if Body.shadowType == "circle" then
+									love.graphics.circle("fill", Body.x - Body.ox, Body.y - Body.oy, Body.radius)
+								elseif Body.shadowType == "rectangle" then
+									love.graphics.rectangle("fill", Body.x - Body.ox, Body.y - Body.oy, Body.width, Body.height)
+								elseif Body.shadowType == "polygon" then
+									love.graphics.polygon("fill", unpack(Body.data))
 								end
 							end
 
-							if LOVE_LIGHT_BODY[k].shadowType == "image" and LOVE_LIGHT_BODY[k].img then
+							if Body.shadowType == "image" and Body.img then
 								love.graphics.setBlendMode("alpha")
 								local length = 1.0
-								local shadowRotation = math.atan2((LOVE_LIGHT_BODY[k].x) - Light.x, (LOVE_LIGHT_BODY[k].y + LOVE_LIGHT_BODY[k].oy) - Light.y)
+								local shadowRotation = math.atan2((Body.x) - Light.x, (Body.y + Body.oy) - Light.y)
 								local alpha = math.abs(math.cos(shadowRotation))
 
-								LOVE_LIGHT_BODY[k].shadowVert = {
-									{math.sin(shadowRotation) * LOVE_LIGHT_BODY[k].imgHeight * length, (length * math.cos(shadowRotation) + 1.0) * LOVE_LIGHT_BODY[k].imgHeight + (math.cos(shadowRotation) + 1.0) * LOVE_LIGHT_BODY[k].shadowY, 0, 0, LOVE_LIGHT_BODY[k].red, LOVE_LIGHT_BODY[k].green, LOVE_LIGHT_BODY[k].blue, LOVE_LIGHT_BODY[k].alpha * LOVE_LIGHT_BODY[k].fadeStrength * 255},
-									{LOVE_LIGHT_BODY[k].imgWidth + math.sin(shadowRotation) * LOVE_LIGHT_BODY[k].imgHeight * length, (length * math.cos(shadowRotation) + 1.0) * LOVE_LIGHT_BODY[k].imgHeight + (math.cos(shadowRotation) + 1.0) * LOVE_LIGHT_BODY[k].shadowY, 1, 0, LOVE_LIGHT_BODY[k].red, LOVE_LIGHT_BODY[k].green, LOVE_LIGHT_BODY[k].blue, LOVE_LIGHT_BODY[k].alpha * LOVE_LIGHT_BODY[k].fadeStrength * 255},
-									{LOVE_LIGHT_BODY[k].imgWidth, LOVE_LIGHT_BODY[k].imgHeight + (math.cos(shadowRotation) + 1.0) * LOVE_LIGHT_BODY[k].shadowY, 1, 1, LOVE_LIGHT_BODY[k].red, LOVE_LIGHT_BODY[k].green, LOVE_LIGHT_BODY[k].blue, LOVE_LIGHT_BODY[k].alpha * 255},
-									{0, LOVE_LIGHT_BODY[k].imgHeight + (math.cos(shadowRotation) + 1.0) * LOVE_LIGHT_BODY[k].shadowY, 0, 1, LOVE_LIGHT_BODY[k].red, LOVE_LIGHT_BODY[k].green, LOVE_LIGHT_BODY[k].blue, LOVE_LIGHT_BODY[k].alpha * 255}
+								Body.shadowVert = {
+									{math.sin(shadowRotation) * Body.imgHeight * length, (length * math.cos(shadowRotation) + 1.0) * Body.imgHeight + (math.cos(shadowRotation) + 1.0) * Body.shadowY, 0, 0, Body.red, Body.green, Body.blue, Body.alpha * Body.fadeStrength * 255},
+									{Body.imgWidth + math.sin(shadowRotation) * Body.imgHeight * length, (length * math.cos(shadowRotation) + 1.0) * Body.imgHeight + (math.cos(shadowRotation) + 1.0) * Body.shadowY, 1, 0, Body.red, Body.green, Body.blue, Body.alpha * Body.fadeStrength * 255},
+									{Body.imgWidth, Body.imgHeight + (math.cos(shadowRotation) + 1.0) * Body.shadowY, 1, 1, Body.red, Body.green, Body.blue, Body.alpha * 255},
+									{0, Body.imgHeight + (math.cos(shadowRotation) + 1.0) * Body.shadowY, 0, 1, Body.red, Body.green, Body.blue, Body.alpha * 255}
 								}
 
-								LOVE_LIGHT_BODY[k].shadowMesh:setVertices(LOVE_LIGHT_BODY[k].shadowVert)
-								love.graphics.draw(LOVE_LIGHT_BODY[k].shadowMesh, LOVE_LIGHT_BODY[k].x - LOVE_LIGHT_BODY[k].ox + LOVE_LIGHT_TRANSLATE_X, LOVE_LIGHT_BODY[k].y - LOVE_LIGHT_BODY[k].oy + LOVE_LIGHT_TRANSLATE_Y)
+								Body.shadowMesh:setVertices(Body.shadowVert)
+								love.graphics.draw(Body.shadowMesh, Body.x - Body.ox + LOVE_LIGHT_TRANSLATE_X, Body.y - Body.oy + LOVE_LIGHT_TRANSLATE_Y)
 							end
 						end
 
@@ -546,11 +547,7 @@ function World:newLight(x, y, red, green, blue, range)
 end
 
 function World:newRoom(x, y, width, height, red, green, blue)
-	local Index = #self.rooms + 1
-	local Room = love.light.newRoom(self, x, y, width, height, red, green, blue)
-	self.Rooms[Index] = Room
-
-	return Room
+	return love.light.newRoom(self, x, y, width, height, red, green, blue)
 end
 
 function World:clearLights()
@@ -684,23 +681,38 @@ function World:getPoints(n)
 end
 
 function World:setLightPosition(n, x, y, z)
-	self.lights[n].setPosition(x, y, z)
+	local Light = self.lights[n]
+	if Light then
+		Light:setPosition(x, y, z)
+	end
 end
 
 function World:setLightX(n, x)
-	self.lights[n].setX(x)
+	local Light = self.lights[n]
+	if Light then
+		Light:setX(x)
+	end
 end
 
 function World:setLightY(n, y)
-	self.lights[n].setY(y)
+	local Light = self.lights[n]
+	if Light then
+		Light:setY(y)
+	end
 end
 
 function World:setLightAngle(n, angle)
-	self.lights[n].setAngle(angle)
+	local Light = self.lights[n]
+	if Light then
+		Light:setAngle(angle)
+	end
 end
 
 function World:setLightDirection(n, direction)
-	self.lights[n].setDirection(direction)
+	local Light = self.lights[n]
+	if Light then
+		Light:setDirection(direction)
+	end
 end
 
 function World:getLightCount()
@@ -708,11 +720,17 @@ function World:getLightCount()
 end
 
 function World:getLightX(n)
-	return self.lights[n].x
+	local Light = self.lights[n]
+	if Light then
+		return Light:getX()
+	end
 end
 
 function World:getLightY(n)
-	return self.lights[n].y
+	local Light = self.lights[n]
+	if Light then
+		return Light:getY()
+	end
 end
 
 function World:getType()

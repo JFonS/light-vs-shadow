@@ -27,8 +27,43 @@ require(RequirePath..".light")
 require(RequirePath..".postshader")
 
 require(RequirePath..".world")
+require(RequirePath..".body")
+require(RequirePath..".room")
 
--- vector functions
+function love.light.newRectangle(p, x, y, width, height)
+	return p:newBody("rectangle", x, y, width, height)
+end
+
+function love.light.newCircle(p, x, y, radius)
+	return p:newBody("circle", x, y, radius)
+end
+
+function love.light.newPolygon(p, ...)
+	return p:newBody("polygon", ...)
+end
+
+function love.light.newImage(p, img, x, y, width, height, ox, oy)
+	return p:newBody("image", img, x, y, width, height, ox, oy)
+end
+
+function love.light.newRefraction(p, normal, x, y, width, height)
+	return p:newBody("refraction", normal, x, y, width, height)
+end
+
+function love.light.newRefractionHeightMap(p, heightMap, x, y, strength)
+	local normal = HeightMapToNormalMap(heightMap, strength)
+	return love.light.newRefraction(p, normal, x, y)
+end
+
+function love.light.newReflection(p, normal, x, y, width, height)
+	return p:newBody("reflection", normal, x, y, width, height)
+end
+
+function love.light.newReflectionHeightMap(p, heightMap, x, y, strength)
+	local normal = HeightMapToNormalMap(heightMap, strength)
+	return love.light.newReflection(p, normal, x, y)
+end
+
 function normalize(v)
 	local len = math.sqrt(math.pow(v[1], 2) + math.pow(v[2], 2))
 	local normalizedv = {v[1] / len, v[2] / len}
