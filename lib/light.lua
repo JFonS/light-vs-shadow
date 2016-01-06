@@ -22,24 +22,24 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ]]
 
-LOVE_LIGHT_CURRENT = nil
-LOVE_LIGHT_CIRCLE = nil
-LOVE_LIGHT_POLY = nil
-LOVE_LIGHT_IMAGE = nil
-LOVE_LIGHT_BODY = nil
-LOVE_LIGHT_LAST_BUFFER = nil
-LOVE_LIGHT_SHADOW_GEOMETRY = nil
+local LOVE_LIGHT_CURRENT = nil
+local LOVE_LIGHT_CIRCLE = nil
+local LOVE_LIGHT_POLY = nil
+local LOVE_LIGHT_IMAGE = nil
+local LOVE_LIGHT_BODY = nil
+local LOVE_LIGHT_LAST_BUFFER = nil
+local LOVE_LIGHT_SHADOW_GEOMETRY = nil
 
-LOVE_LIGHT_BLURV = love.graphics.newShader("shader/blurv.glsl")
-LOVE_LIGHT_BLURH = love.graphics.newShader("shader/blurh.glsl")
+local LOVE_LIGHT_BLURV = love.graphics.newShader("shader/blurv.glsl")
+local LOVE_LIGHT_BLURH = love.graphics.newShader("shader/blurh.glsl")
 LOVE_LIGHT_BLURV:send("screen", {love.graphics.getWidth(), love.graphics.getHeight()})
 LOVE_LIGHT_BLURH:send("screen", {love.graphics.getWidth(), love.graphics.getHeight()})
 
-LOVE_LIGHT_TRANSLATE_X = 0
-LOVE_LIGHT_TRANSLATE_Y = 0
-LOVE_LIGHT_TRANSLATE_X_OLD = 0
-LOVE_LIGHT_TRANSLATE_Y_OLD = 0
-LOVE_LIGHT_DIRECTION = 0
+local LOVE_LIGHT_TRANSLATE_X = 0
+local LOVE_LIGHT_TRANSLATE_Y = 0
+local LOVE_LIGHT_TRANSLATE_X_OLD = 0
+local LOVE_LIGHT_TRANSLATE_Y_OLD = 0
+local LOVE_LIGHT_DIRECTION = 0
 
 love.light = {}
 
@@ -51,6 +51,7 @@ function love.light.newWorld()
 	o.ambient = {0, 0, 0}
 	o.body = {}
 	o.refraction = {}
+	o.rooms = {}
 	o.shadow = love.graphics.newCanvas()
 	o.shadow2 = love.graphics.newCanvas()
 	o.shine = love.graphics.newCanvas()
@@ -213,6 +214,12 @@ function love.light.newWorld()
 			love.graphics.setColor(unpack(o.ambient))
 			love.graphics.setBlendMode("alpha")
 			love.graphics.rectangle("fill", LOVE_LIGHT_TRANSLATE_X, LOVE_LIGHT_TRANSLATE_Y, love.graphics.getWidth(), love.graphics.getHeight())
+
+			for _, Room in pairs(o.rooms) do
+				love.graphics.setColor(Room.red, Room.green, Room.blue)
+				love.graphics.rectangle("fill", Room.x - LOVE_LIGHT_TRANSLATE_X, Room.y - LOVE_LIGHT_TRANSLATE_Y, Room.width, Room.height)
+			end
+
 			love.graphics.setColor(255, 255, 255)
 			love.graphics.setBlendMode("add")
 			for i = 1, #o.lights do
@@ -227,6 +234,12 @@ function love.light.newWorld()
 			love.graphics.setColor(unpack(o.ambient))
 			love.graphics.setBlendMode("alpha")
 			love.graphics.rectangle("fill", 0, 0, love.graphics.getWidth(), love.graphics.getHeight())
+
+			for _, Room in pairs(o.rooms) do
+				love.graphics.setColor(Room.red, Room.green, Room.blue)
+				love.graphics.rectangle("fill", Room.x - LOVE_LIGHT_TRANSLATE_X, Room.y - LOVE_LIGHT_TRANSLATE_Y, Room.width, Room.height)
+			end
+
 			love.graphics.setColor(255, 255, 255)
 			love.graphics.setBlendMode("add")
 			for i = 1, #o.lights do
@@ -564,9 +577,16 @@ function love.light.newWorld()
 	end
 	-- new light
 	o.newLight = function(x, y, red, green, blue, range)
-		o.lights[#o.lights + 1] = love.light.newLight(o, x, y, red, green, blue, range)
+		local i = #o.lights + 1
+		o.lights[i] = love.light.newLight(o, x, y, red, green, blue, range)
 
-		return o.lights[#o.lights]
+		return o.lights[i]
+	end
+	o.newRoom = function(x, y, width, height, red, green, blue)
+		local i = #o.rooms + 1
+		o.rooms[i] = love.light.newRoom(o, x, y, width, height, red, green, blue)
+
+		return o.rooms[i]
 	end
 	-- clear lights
 	o.clearLights = function()
@@ -733,6 +753,71 @@ function love.light.newWorld()
 	-- get type
 	o.getType = function()
 		return "world"
+	end
+
+	return o
+end
+
+function love.light.newRoom(p, x, y, width, height, red, green, blue)
+	local o = {}
+	o.x = x or 0
+	o.y = y or 0
+	o.width = width or 0
+	o.height = height or 0
+	o.red = red or 0
+	o.green = green or 0
+	o.blue = blue or 0
+
+	o.setPosition = function(x, y)
+		if x ~= o.x or y ~= o.y then
+			o.x = x
+			o.y = y
+		end
+	end
+	-- get x
+	o.getX = function()
+		return o.x
+	end
+	-- get y
+	o.getY = function()
+		return o.y
+	end
+	-- set x
+	o.setX = function(x)
+		if x ~= o.x then
+			o.x = x
+			o.changed = true
+		end
+	end
+	-- set y
+	o.setY = function(y)
+		if y ~= o.y then
+			o.y = y
+			o.changed = true
+		end
+	end
+	-- set color
+	o.setColor = function(red, green, blue)
+		o.red = red or 0
+		o.green = green or 0
+		o.blue = blue or 0
+		--p.changed = true
+	end
+	-- get type
+	o.getType = function()
+		return "room"
+	end
+	-- clear
+	o.clear = function()
+		for i = 1, #p.rooms do
+			if p.rooms[i] == o then
+				for k = i, #p.rooms - 1 do
+					p.rooms[k] = p.rooms[k + 1]
+				end
+				p.rooms[#p.rooms] = nil
+				break
+			end
+		end
 	end
 
 	return o
