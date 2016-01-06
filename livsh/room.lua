@@ -12,6 +12,7 @@ function love.light.newRoom(World, x, y, width, height, red, green, blue)
 	self.red = red or 0
 	self.green = green or 0
 	self.blue = blue or 0
+	self.visible = true
 	
 	local Index = #World.rooms + 1
 	World.rooms[Index] = self
@@ -52,6 +53,10 @@ function Room:setColor(red, green, blue)
 	self.red = red or 0
 	self.green = green or 0
 	self.blue = blue or 0
+end
+
+function Room:setVisible(visible)
+	self.visible = visible
 end
 
 function Room:getType()

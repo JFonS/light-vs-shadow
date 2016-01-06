@@ -177,8 +177,10 @@ function World:update()
 			love.graphics.rectangle("fill", LOVE_LIGHT_TRANSLATE_X, LOVE_LIGHT_TRANSLATE_Y, love.graphics.getWidth(), love.graphics.getHeight())
 
 			for _, Room in pairs(self.rooms) do
-				love.graphics.setColor(Room.red, Room.green, Room.blue)
-				love.graphics.rectangle("fill", Room.x - LOVE_LIGHT_TRANSLATE_X, Room.y - LOVE_LIGHT_TRANSLATE_Y, Room.width, Room.height)
+				if Room.visible then
+					love.graphics.setColor(Room.red, Room.green, Room.blue)
+					love.graphics.rectangle("fill", Room.x - LOVE_LIGHT_TRANSLATE_X, Room.y - LOVE_LIGHT_TRANSLATE_Y, Room.width, Room.height)
+				end
 			end
 
 			love.graphics.setColor(255, 255, 255)
@@ -197,8 +199,10 @@ function World:update()
 			love.graphics.rectangle("fill", 0, 0, love.graphics.getWidth(), love.graphics.getHeight())
 
 			for _, Room in pairs(self.rooms) do
-				love.graphics.setColor(Room.red, Room.green, Room.blue)
-				love.graphics.rectangle("fill", Room.x - LOVE_LIGHT_TRANSLATE_X, Room.y - LOVE_LIGHT_TRANSLATE_Y, Room.width, Room.height)
+				if Room.visible then
+					love.graphics.setColor(Room.red, Room.green, Room.blue)
+					love.graphics.rectangle("fill", Room.x - LOVE_LIGHT_TRANSLATE_X, Room.y - LOVE_LIGHT_TRANSLATE_Y, Room.width, Room.height)
+				end
 			end
 
 			love.graphics.setColor(255, 255, 255)
