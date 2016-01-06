@@ -6,8 +6,7 @@
 --
 -- Updated by Dresenpai
 
-require "lib/postshader"
-require "lib/light"
+require "livsh"
 
 exf = {}
 exf.current = nil

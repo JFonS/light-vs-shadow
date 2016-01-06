@@ -1,6 +1,5 @@
 -- Example: Complex Example
-require "lib/postshader"
-require "lib/light"
+require "livsh"
 
 function initScene()
 	-- physic world

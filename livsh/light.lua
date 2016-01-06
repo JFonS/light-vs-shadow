@@ -22,6 +22,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ]]
 
+local Path = (...):gsub("%p", "/"):sub(1, -6).."/"
+
 local LOVE_LIGHT_CURRENT = nil
 local LOVE_LIGHT_CIRCLE = nil
 local LOVE_LIGHT_POLY = nil
@@ -30,8 +32,8 @@ local LOVE_LIGHT_BODY = nil
 local LOVE_LIGHT_LAST_BUFFER = nil
 local LOVE_LIGHT_SHADOW_GEOMETRY = nil
 
-local LOVE_LIGHT_BLURV = love.graphics.newShader("shader/blurv.glsl")
-local LOVE_LIGHT_BLURH = love.graphics.newShader("shader/blurh.glsl")
+local LOVE_LIGHT_BLURV = love.graphics.newShader(Path.."shader/blurv.glsl")
+local LOVE_LIGHT_BLURH = love.graphics.newShader(Path.."shader/blurh.glsl")
 LOVE_LIGHT_BLURV:send("screen", {love.graphics.getWidth(), love.graphics.getHeight()})
 LOVE_LIGHT_BLURH:send("screen", {love.graphics.getWidth(), love.graphics.getHeight()})
 
@@ -70,14 +72,14 @@ function love.light.newWorld()
 	o.refractionStrength = 8.0
 	o.pixelShadow = love.graphics.newCanvas()
 	o.pixelShadow2 = love.graphics.newCanvas()
-	o.shader = love.graphics.newShader("shader/poly_shadow.glsl")
-	o.glowShader = love.graphics.newShader("shader/glow.glsl")
-	o.normalShader = love.graphics.newShader("shader/normal.glsl")
-	o.normalInvertShader = love.graphics.newShader("shader/normal_invert.glsl")
-	o.materialShader = love.graphics.newShader("shader/material.glsl")
-	o.refractionShader = love.graphics.newShader("shader/refraction.glsl")
+	o.shader = love.graphics.newShader(Path.."shader/poly_shadow.glsl")
+	o.glowShader = love.graphics.newShader(Path.."shader/glow.glsl")
+	o.normalShader = love.graphics.newShader(Path.."shader/normal.glsl")
+	o.normalInvertShader = love.graphics.newShader(Path.."shader/normal_invert.glsl")
+	o.materialShader = love.graphics.newShader(Path.."shader/material.glsl")
+	o.refractionShader = love.graphics.newShader(Path.."shader/refraction.glsl")
 	o.refractionShader:send("screen", {love.graphics.getWidth(), love.graphics.getHeight()})
-	o.reflectionShader = love.graphics.newShader("shader/reflection.glsl")
+	o.reflectionShader = love.graphics.newShader(Path.."shader/reflection.glsl")
 	o.reflectionShader:send("screen", {love.graphics.getWidth(), love.graphics.getHeight()})
 	o.reflectionStrength = 16.0
 	o.reflectionVisibility = 1.0
