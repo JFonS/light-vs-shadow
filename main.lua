@@ -71,11 +71,11 @@ function exf.draw()
 
     exf.list:draw()
 
-	lightWorld.update()
-	lightWorld.drawShadow()
+	lightWorld:update()
+	lightWorld:drawShadow()
 
 	love.graphics.setColor(255, 255, 255)
-    love.graphics.draw(exf.bigball, 800 - 128, 600 - 128, love.timer.getTime(), 1, 1, exf.bigball:getWidth() * 0.5, exf.bigball:getHeight() * 0.5)
+   love.graphics.draw(exf.bigball, 800 - 128, 600 - 128, love.timer.getTime(), 1, 1, exf.bigball:getWidth() * 0.5, exf.bigball:getHeight() * 0.5)
 end
 
 function exf.keypressed(k)
@@ -179,14 +179,14 @@ function exf.resume()
 
 	-- create light world
 	lightWorld = love.light.newWorld()
-	lightWorld.setAmbientColor(127, 127, 127)
+	lightWorld:setAmbientColor(127, 127, 127)
 
 	-- create light
-	lightMouse = lightWorld.newLight(0, 0, 255, 127, 63, 500)
+	lightMouse = lightWorld:newLight(0, 0, 255, 127, 63, 500)
 	lightMouse.setSmooth(2)
 
 	-- create shadow bodys
-	circleTest = lightWorld.newCircle(800 - 128, 600 - 128, 46)
+	circleTest = lightWorld:newCircle(800 - 128, 600 - 128, 46)
 end
 
 function inside(mx, my, x, y, w, h)

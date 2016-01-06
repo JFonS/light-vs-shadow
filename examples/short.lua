@@ -10,24 +10,24 @@ function love.load()
 
 	-- create light world
 	lightWorld = love.light.newWorld()
-	lightWorld.setAmbientColor(15, 15, 31)
-	lightWorld.setRefractionStrength(32.0)
+	lightWorld:setAmbientColor(15, 15, 31)
+	lightWorld:setRefractionStrength(32.0)
 
 	-- create light
-	lightMouse = lightWorld.newLight(0, 0, 255, 127, 63, 300)
+	lightMouse = lightWorld:newLight(0, 0, 255, 127, 63, 300)
 	lightMouse.setGlowStrength(0.3)
 	--lightMouse.setSmooth(0.01)
 
 	-- create shadow bodys
-	circleTest = lightWorld.newCircle(256, 256, 16)
-	rectangleTest = lightWorld.newRectangle(512, 512, 64, 64)
-	imageTest = lightWorld.newImage(image, 64, 64, 24, 6)
+	circleTest = lightWorld:newCircle(256, 256, 16)
+	rectangleTest = lightWorld:newRectangle(512, 512, 64, 64)
+	imageTest = lightWorld:newImage(image, 64, 64, 24, 6)
 	imageTest.setNormalMap(image_normal)
 	imageTest.setGlowMap(glow)
 	imageTest.setOffset(12, -10)
 
 	-- create body object
-	objectTest = lightWorld.newBody("refraction", normal, 64, 64, 128, 128)
+	objectTest = lightWorld:newBody("refraction", normal, 64, 64, 128, 128)
 	--objectTest.setShine(false)
 	--objectTest.setShadowType("rectangle")
 	--objectTest.setShadowDimension(64, 64)
@@ -46,7 +46,7 @@ end
 
 function love.draw()
 	-- update lightmap (doesn't need deltatime)
-	lightWorld.update()
+	lightWorld:update()
 
 	love.postshader.setBuffer("render")
 
@@ -56,7 +56,7 @@ function love.draw()
 	--love.graphics.draw(imgFloor, quadScreen, 0, 0)
 
 	-- draw lightmap shadows
-	lightWorld.drawShadow()
+	lightWorld:drawShadow()
 
 	-- draw scene objects
 	love.graphics.setColor(63, 255, 127)
@@ -68,19 +68,19 @@ function love.draw()
 	--love.graphics.rectangle("fill", 128 - 32, 128 - 32, 64, 64)
 
 	-- draw lightmap shine
-	lightWorld.drawShine()
+	lightWorld:drawShine()
 
 	-- draw pixel shadow
-	lightWorld.drawPixelShadow()
+	lightWorld:drawPixelShadow()
 
 	-- draw glow
-	lightWorld.drawGlow()
+	lightWorld:drawGlow()
 
 	-- draw refraction
-	lightWorld.drawRefraction()
+	lightWorld:drawRefraction()
 
 	-- draw reflection
-	lightWorld.drawReflection()
+	lightWorld:drawReflection()
 
 	love.postshader.draw()
 end
