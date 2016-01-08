@@ -71,13 +71,14 @@ function love.light.newBody(World, type, ...)
 			self.ix = self.imgWidth * 0.5
 			self.iy = self.imgHeight * 0.5
 			self.vert = {
-				{ 0.0, 0.0, 0.0, 0.0 },
-				{ self.width, 0.0, 1.0, 0.0 },
-				{ self.width, self.height, 1.0, 1.0 },
-				{ 0.0, self.height, 0.0, 1.0 },
+				{ 0.0, 0.0, 0.0, 0.0},
+				{ self.width, 0.0, 1.0, 0.0},
+				{ self.width, self.height, 1.0, 1.0},
+				{ 0.0, self.height, 0.0, 1.0},
 			}
 			self.msh = love.graphics.newMesh(self.vert, "fan")
-			self.msh:setTexture(self.img)
+			self.msh:setVertices(self.vert)
+			--self.msh:setTexture(self.img)
 		else
 			self.width = args[4] or 64
 			self.height = args[5] or 64
@@ -309,11 +310,6 @@ function Body:getPoints()
 	return unpack(self.data)
 end
 
-function Body:setShadowType(type)
-	self.shadowType = type
-	self.World.changed = true
-end
-
 function Body:setShadow(b)
 	self.castsNoShadow = not b
 	self.World.changed = true
@@ -493,6 +489,8 @@ end
 
 function Body:setShadowType(type, ...)
 	self.shadowType = type
+	self.World.changed = true
+	
 	local args = {...}
 	if self.shadowType == "circle" then
 		self.radius = args[1] or 16

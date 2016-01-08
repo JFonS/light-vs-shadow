@@ -98,6 +98,22 @@ function love.load()
 	mouseLight.z = 63
 	lightDirection = 0.0
 	colorAberration = 0.0
+	
+	function lightWorld:drawObjects()
+		love.graphics.setBlendMode("alpha")
+		for i = 1, phyCnt do
+			if phyLight[i]:getType() == "image" then
+				if normalOn and phyLight[i].normal then
+					love.graphics.setColor(255, 255, 255)
+					love.graphics.draw(phyLight[i].normal, phyLight[i].x - phyLight[i].nx, phyLight[i].y - phyLight[i].ny)
+				elseif not phyLight[i].material then
+					math.randomseed(i)
+					love.graphics.setColor(math.random(127, 255), math.random(127, 255), math.random(127, 255))
+					love.graphics.draw(phyLight[i].img, phyLight[i].x - phyLight[i].ix, phyLight[i].y - phyLight[i].iy)
+				end
+			end
+		end
+	end
 
 	-- init physic world
 	initScene()
@@ -280,20 +296,6 @@ function love.draw()
 	-- draw lightmap shine
 	if lightOn and not normalOn then
 		lightWorld:drawShine()
-	end
-
-	love.graphics.setBlendMode("alpha")
-	for i = 1, phyCnt do
-		if phyLight[i]:getType() == "image" then
-			if normalOn and phyLight[i].normal then
-				love.graphics.setColor(255, 255, 255)
-				love.graphics.draw(phyLight[i].normal, phyLight[i].x - phyLight[i].nx, phyLight[i].y - phyLight[i].ny)
-			elseif not phyLight[i].material then
-				math.randomseed(i)
-				love.graphics.setColor(math.random(127, 255), math.random(127, 255), math.random(127, 255))
-				love.graphics.draw(phyLight[i].img, phyLight[i].x - phyLight[i].ix, phyLight[i].y - phyLight[i].iy)
-			end
-		end
 	end
 
 	if not normalOn then
@@ -520,7 +522,7 @@ function love.keypressed(k, u)
 		end
 	elseif k == "f11" then
 		physicWorld:destroy()
-		lightWorld:clearBodys()
+		lightWorld:clearBodies()
 		initScene()
 	elseif k == "f12" then
 		lightWorld:clearLights()

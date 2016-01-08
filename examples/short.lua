@@ -10,28 +10,38 @@ function love.load()
 
 	-- create light world
 	lightWorld = love.light.newWorld()
-	lightWorld:setAmbientColor(15, 15, 31)
+	lightWorld:setAmbientColor(60, 60, 60)
 	lightWorld:setRefractionStrength(32.0)
+	lightWorld.isPixelShadows = true
+	
+	function lightWorld:drawObjects()
+		love.graphics.setColor(63, 255, 127)
+		love.graphics.circle("fill", circleTest:getX(), circleTest:getY(), circleTest:getRadius())
+		love.graphics.polygon("fill", rectangleTest:getPoints())
+		love.graphics.setColor(255, 255, 255)
+		love.graphics.draw(image, 64, 64)
+	end
 
 	-- create light
-	lightMouse = lightWorld:newLight(0, 0, 255, 127, 63, 300)
+	lightMouse = lightWorld:newLight(0, 0, 255, 255, 255, 300)
 	lightMouse:setGlowStrength(0.3)
 	--lightMouse.setSmooth(0.01)
 
 	-- create shadow bodys
 	circleTest = lightWorld:newCircle(256, 256, 16)
 	rectangleTest = lightWorld:newRectangle(512, 512, 64, 64)
-	imageTest = lightWorld:newImage(image, 64, 64, 24, 6)
+	imageTest = lightWorld:newImage(image, 64, 64)
 	imageTest:setNormalMap(image_normal)
-	imageTest:setGlowMap(glow)
-	imageTest:setOffset(12, -10)
+	--imageTest:setGlowMap(glow)
+	imageTest:setOffset(0, 0)
+	imageTest:setShadowType("image")
 
 	-- create body object
-	objectTest = lightWorld:newBody("refraction", normal, 64, 64, 128, 128)
+	--objectTest = lightWorld:newBody("refraction", normal, 64, 64, 128, 128)
 	--objectTest:setShine(false)
 	--objectTest:setShadowType("rectangle")
 	--objectTest:setShadowDimension(64, 64)
-	objectTest:setReflection(true)
+	--objectTest:setReflection(true)
 
 	-- set background
 	quadScreen = love.graphics.newQuad(0, 0, love.graphics.getWidth(), love.graphics.getHeight(), 32, 24)
@@ -57,13 +67,6 @@ function love.draw()
 
 	-- draw lightmap shadows
 	lightWorld:drawShadow()
-
-	-- draw scene objects
-	love.graphics.setColor(63, 255, 127)
-	love.graphics.circle("fill", circleTest:getX(), circleTest:getY(), circleTest:getRadius())
-	love.graphics.polygon("fill", rectangleTest:getPoints())
-	love.graphics.setColor(255, 255, 255)
-	love.graphics.draw(image, 64 - image:getWidth() * 0.5, 64 - image:getHeight() * 0.5)
 
 	--love.graphics.rectangle("fill", 128 - 32, 128 - 32, 64, 64)
 

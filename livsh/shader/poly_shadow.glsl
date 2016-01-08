@@ -18,11 +18,11 @@ vec4 effect(vec4 color, Image texture, vec2 texture_coords, vec2 pixel_coords){
 		float angle2 = atan(lightPosition.x - pixel_coords.x, pixel_coords.y - lightPosition.y) + PI;
 		if(lightDirection - lightAngle > 0 && lightDirection + lightAngle < PI * 2) {
 			if(angle2 < mod(lightDirection + lightAngle, PI * 2) && angle2 > mod(lightDirection - lightAngle, PI * 2)) {
-				return vec4(0.0, 0.0, 0.0, 1.0);
+				return vec4(0, 0, 0, 1);
 			}
 		} else {
 			if(angle2 < mod(lightDirection + lightAngle, PI * 2) || angle2 > mod(lightDirection - lightAngle, PI * 2)) {
-				return vec4(0.0, 0.0, 0.0, 1.0);
+				return vec4(0, 0, 0, 1);
 			}
 		}
 	}
@@ -34,7 +34,8 @@ vec4 effect(vec4 color, Image texture, vec2 texture_coords, vec2 pixel_coords){
 			pixel.rgb = lightColor * pow(att, lightSmooth);
 		}
 	} else {
-		return vec4(0.0, 0.0, 0.0, 1.0);
+		pixel.rgb = lightColor * pow(0, lightSmooth);
+		return pixel;
 	}
 
 	return pixel;

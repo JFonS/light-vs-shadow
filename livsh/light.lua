@@ -23,6 +23,9 @@ function love.light.newLight(World, x, y, red, green, blue, range)
 	self.changed = true
 	self.visible = true
 	World.isLight = true
+	
+	local Index = #World.lights + 1
+	World.lights[Index] = self
 
 	return setmetatable(self, LightMT)
 end
