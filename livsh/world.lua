@@ -2,6 +2,8 @@ local Path = (...):gsub("%p", "/"):sub(1, -6).."/"
 local World = {}
 local WorldMT = {__index = World}
 
+local calculateShadows = love.light.calculateShadows
+
 function love.light.newWorld()
 	local self = {}
 
@@ -10,6 +12,14 @@ function love.light.newWorld()
 	self.body = {}
 	self.refraction = {}
 	self.rooms = {}
+	self.translate = {
+		x = 0,
+		y = 0,
+	}
+	self.translateOld = {
+		x = 0,
+		y = 0,
+	}
 	self.shadow = love.graphics.newCanvas()
 	self.shadow2 = love.graphics.newCanvas()
 	self.shine = love.graphics.newCanvas()
@@ -53,15 +63,34 @@ function love.light.newWorld()
 	self.isRefraction = false
 	self.isReflection = false
 	
+	function self.ShadowStencil()
+		for i, Shadow in pairs(self.ShadowGeometry) do
+			if Shadow.alpha == 1.0 then
+				love.graphics.polygon("fill", unpack(Shadow))
+			end
+		end
+		for i, Body in pairs(self.body) do
+			if not Body.castsNoShadow then
+				if Body.shadowType == "circle" then
+					love.graphics.circle("fill", Body.x - Body.ox, Body.y - Body.oy, Body.radius)
+				elseif Body.shadowType == "rectangle" then
+					love.graphics.rectangle("fill", Body.x - Body.ox, Body.y - Body.oy, Body.width, Body.height)
+				elseif Body.shadowType == "polygon" then
+					love.graphics.polygon("fill", unpack(Body.data))
+				end
+			end
+		end
+	end
+	
 	return setmetatable(self, WorldMT)
 end
 
 function World:update()
-	LOVE_LIGHT_LAST_BUFFER = love.graphics.getCanvas()
+	self.LastBuffer = love.graphics.getCanvas()
 
-	if LOVE_LIGHT_TRANSLATE_X ~= LOVE_LIGHT_TRANSLATE_X_OLD or LOVE_LIGHT_TRANSLATE_Y ~= LOVE_LIGHT_TRANSLATE_Y_OLD then
-		LOVE_LIGHT_TRANSLATE_X_OLD = LOVE_LIGHT_TRANSLATE_X
-		LOVE_LIGHT_TRANSLATE_Y_OLD = LOVE_LIGHT_TRANSLATE_Y
+	if self.translate.x ~= self.translateOld.x or self.translate.y ~= self.translateOld.y then
+		self.translateOld.x = self.translate.x
+		self.translateOld.y = self.translate.y
 		self.changed = true
 	end
 
@@ -71,15 +100,11 @@ function World:update()
 	if self.optionShadows and (self.isShadows or self.isLight) then
 		love.graphics.setShader(self.shader)
 
-		LOVE_LIGHT_BODY = self.body
-
 		local lightsOnScreen = 0
 		for i, Light in pairs(self.lights) do
 			if Light.changed or self.changed then
-				if Light.x + Light.range > LOVE_LIGHT_TRANSLATE_X and Light.x - Light.range < love.graphics.getWidth() + LOVE_LIGHT_TRANSLATE_X and Light.y + Light.range > LOVE_LIGHT_TRANSLATE_Y and Light.y - Light.range < love.graphics.getHeight() + LOVE_LIGHT_TRANSLATE_Y then
-					LOVE_LIGHT_CURRENT = Light
-					LOVE_LIGHT_DIRECTION = LOVE_LIGHT_DIRECTION + 0.002
-					self.shader:send("lightPosition", {Light.x - LOVE_LIGHT_TRANSLATE_X, Light.y - LOVE_LIGHT_TRANSLATE_Y, Light.z})
+				if Light.x + Light.range > self.translate.x and Light.x - Light.range < love.graphics.getWidth() + self.translate.x and Light.y + Light.range > self.translate.y and Light.y - Light.range < love.graphics.getHeight() + self.translate.y then
+					self.shader:send("lightPosition", {Light.x - self.translate.x, Light.y - self.translate.y, Light.z})
 					self.shader:send("lightRange", Light.range)
 					self.shader:send("lightColor", {Light.red / 255.0, Light.green / 255.0, Light.blue / 255.0})
 					self.shader:send("lightSmooth", Light.smooth)
@@ -91,17 +116,17 @@ function World:update()
 					love.graphics.clear()
 
 					-- calculate shadows
-					LOVE_LIGHT_SHADOW_GEOMETRY = calculateShadows(LOVE_LIGHT_CURRENT, self.body)
+					self.ShadowGeometry = calculateShadows(Light, self.body)
 
 					-- draw shadow
-					love.graphics.stencil(shadowStencil)
+					love.graphics.stencil(self.ShadowStencil)
 					love.graphics.setStencilTest("equal", 0)
-					love.graphics.rectangle("fill", LOVE_LIGHT_TRANSLATE_X, LOVE_LIGHT_TRANSLATE_Y, love.graphics.getWidth(), love.graphics.getHeight())
+					love.graphics.rectangle("fill", self.translate.x, self.translate.y, love.graphics.getWidth(), love.graphics.getHeight())
 
 					-- draw color shadows
 					love.graphics.setBlendMode("multiply")
 					love.graphics.setShader()
-					for k, Shadow in pairs(LOVE_LIGHT_SHADOW_GEOMETRY) do
+					for k, Shadow in pairs(self.ShadowGeometry) do
 						if Shadow.alpha < 1.0 then
 							love.graphics.setColor(
 								Shadow.red * (1.0 - Shadow.alpha),
@@ -139,7 +164,7 @@ function World:update()
 							}
 
 							Body.shadowMesh:setVertices(Body.shadowVert)
-							love.graphics.draw(Body.shadowMesh, Body.x - Body.ox + LOVE_LIGHT_TRANSLATE_X, Body.y - Body.oy + LOVE_LIGHT_TRANSLATE_Y)
+							love.graphics.draw(Body.shadowMesh, Body.x - Body.ox + self.translate.x, Body.y - Body.oy + self.translate.y)
 						end
 					end
 
@@ -167,12 +192,12 @@ function World:update()
 		love.graphics.setStencilTest()
 		love.graphics.setColor(unpack(self.ambient))
 		love.graphics.setBlendMode("alpha")
-		love.graphics.rectangle("fill", LOVE_LIGHT_TRANSLATE_X, LOVE_LIGHT_TRANSLATE_Y, love.graphics.getWidth(), love.graphics.getHeight())
+		love.graphics.rectangle("fill", self.translate.x, self.translate.y, love.graphics.getWidth(), love.graphics.getHeight())
 
 		for _, Room in pairs(self.rooms) do
 			if Room.visible then
 				love.graphics.setColor(Room.red, Room.green, Room.blue)
-				love.graphics.rectangle("fill", Room.x - LOVE_LIGHT_TRANSLATE_X, Room.y - LOVE_LIGHT_TRANSLATE_Y, Room.width, Room.height)
+				love.graphics.rectangle("fill", Room.x - self.translate.x, Room.y - self.translate.y, Room.width, Room.height)
 			end
 		end
 
@@ -180,7 +205,7 @@ function World:update()
 		love.graphics.setBlendMode("add")
 		for i, Light in pairs(self.lights) do
 			if Light.visible then
-				love.graphics.draw(Light.shadow, LOVE_LIGHT_TRANSLATE_X, LOVE_LIGHT_TRANSLATE_Y)
+				love.graphics.draw(Light.shadow, self.translate.x, self.translate.y)
 			end
 		end
 		self.isShadowBlur = false
@@ -194,7 +219,7 @@ function World:update()
 		for _, Room in pairs(self.rooms) do
 			if Room.visible then
 				love.graphics.setColor(Room.red, Room.green, Room.blue)
-				love.graphics.rectangle("fill", Room.x - LOVE_LIGHT_TRANSLATE_X, Room.y - LOVE_LIGHT_TRANSLATE_Y, Room.width, Room.height)
+				love.graphics.rectangle("fill", Room.x - self.translate.x, Room.y - self.translate.y, Room.width, Room.height)
 			end
 		end
 
@@ -202,7 +227,7 @@ function World:update()
 		love.graphics.setBlendMode("add")
 		for i, Light in pairs(self.lights) do
 			if Light.visible then
-				love.graphics.draw(Light.shine, LOVE_LIGHT_TRANSLATE_X, LOVE_LIGHT_TRANSLATE_Y)
+				love.graphics.draw(Light.shine, self.translate.x, self.translate.y)
 			end
 		end
 	end
@@ -218,7 +243,7 @@ function World:update()
 		for i, Body in pairs(self.body) do
 			if Body.type == "image" and Body.normalMesh then
 				love.graphics.setColor(255, 255, 255)
-				love.graphics.draw(Body.normalMesh, Body.x - Body.nx + LOVE_LIGHT_TRANSLATE_X, Body.y - Body.ny + LOVE_LIGHT_TRANSLATE_Y)
+				love.graphics.draw(Body.normalMesh, Body.x - Body.nx + self.translate.x, Body.y - Body.ny + self.translate.y)
 			end
 		end
 		love.graphics.setColor(255, 255, 255)
@@ -250,7 +275,7 @@ function World:update()
 					self.normalShader:send("lightDirection", Light.direction)
 					love.graphics.setShader(self.normalShader)
 				end
-				love.graphics.draw(self.normalMap, LOVE_LIGHT_TRANSLATE_X, LOVE_LIGHT_TRANSLATE_Y)
+				love.graphics.draw(self.normalMap, self.translate.x, self.translate.y)
 			end
 		end
 
@@ -258,10 +283,10 @@ function World:update()
 		love.graphics.setCanvas(self.pixelShadow)
 		love.graphics.clear(255, 255, 255)
 		love.graphics.setBlendMode("alpha")
-		love.graphics.draw(self.pixelShadow2, LOVE_LIGHT_TRANSLATE_X, LOVE_LIGHT_TRANSLATE_Y)
+		love.graphics.draw(self.pixelShadow2, self.translate.x, self.translate.y)
 		love.graphics.setBlendMode("add")
 		love.graphics.setColor(unpack(self.ambient))
-		love.graphics.rectangle("fill", LOVE_LIGHT_TRANSLATE_X, LOVE_LIGHT_TRANSLATE_Y, love.graphics.getWidth(), love.graphics.getHeight())
+		love.graphics.rectangle("fill", self.translate.x, self.translate.y, love.graphics.getWidth(), love.graphics.getHeight())
 		love.graphics.setBlendMode("alpha")
 	end
 
@@ -305,7 +330,7 @@ function World:update()
 					love.graphics.setShader()
 					love.graphics.setColor(0, 0, 0)
 				end
-				love.graphics.draw(Body.img, Body.x - Body.ix + LOVE_LIGHT_TRANSLATE_X, Body.y - Body.iy + LOVE_LIGHT_TRANSLATE_Y)
+				love.graphics.draw(Body.img, Body.x - Body.ix + self.translate.x, Body.y - Body.iy + self.translate.y)
 			end
 		end
 	end
@@ -320,10 +345,10 @@ function World:update()
 			if Body.refraction and Body.normal then
 				love.graphics.setColor(255, 255, 255)
 				if Body.tileX == 0.0 and Body.tileY == 0.0 then
-					love.graphics.draw(normal, Body.x - Body.nx + LOVE_LIGHT_TRANSLATE_X, Body.y - Body.ny + LOVE_LIGHT_TRANSLATE_Y)
+					love.graphics.draw(normal, Body.x - Body.nx + self.translate.x, Body.y - Body.ny + self.translate.y)
 				else
 					Body.normalMesh:setVertices(Body.normalVert)
-					love.graphics.draw(Body.normalMesh, Body.x - Body.nx + LOVE_LIGHT_TRANSLATE_X, Body.y - Body.ny + LOVE_LIGHT_TRANSLATE_Y)
+					love.graphics.draw(Body.normalMesh, Body.x - Body.nx + self.translate.x, Body.y - Body.ny + self.translate.y)
 				end
 			end
 		end
@@ -338,7 +363,7 @@ function World:update()
 				elseif Body.type == "polygon" then
 					love.graphics.polygon("fill", unpack(Body.data))
 				elseif Body.type == "image" and Body.img then
-					--love.graphics.draw(Body.img, Body.x - Body.ix + LOVE_LIGHT_TRANSLATE_X, Body.y - Body.iy + LOVE_LIGHT_TRANSLATE_Y)
+					--love.graphics.draw(Body.img, Body.x - Body.ix + self.translate.x, Body.y - Body.iy + self.translate.y)
 				end
 			end
 		end
@@ -355,17 +380,17 @@ function World:update()
 				if Body.reflection and Body.normal then
 					love.graphics.setColor(255, 0, 0)
 					Body.normalMesh:setVertices(Body.normalVert)
-					love.graphics.draw(Body.normalMesh, Body.x - Body.nx + LOVE_LIGHT_TRANSLATE_X, Body.y - Body.ny + LOVE_LIGHT_TRANSLATE_Y)
+					love.graphics.draw(Body.normalMesh, Body.x - Body.nx + self.translate.x, Body.y - Body.ny + self.translate.y)
 				end
 			end
 			
 			for i, Body in pairs(self.body) do
 				if Body.reflective and Body.img then
 					love.graphics.setColor(0, 255, 0)
-					love.graphics.draw(Body.img, Body.x - Body.ix + LOVE_LIGHT_TRANSLATE_X, Body.y - Body.iy + LOVE_LIGHT_TRANSLATE_Y)
+					love.graphics.draw(Body.img, Body.x - Body.ix + self.translate.x, Body.y - Body.iy + self.translate.y)
 				elseif not Body.reflection and Body.img then
 					love.graphics.setColor(0, 0, 0)
-					love.graphics.draw(Body.img, Body.x - Body.ix + LOVE_LIGHT_TRANSLATE_X, Body.y - Body.iy + LOVE_LIGHT_TRANSLATE_Y)
+					love.graphics.draw(Body.img, Body.x - Body.ix + self.translate.x, Body.y - Body.iy + self.translate.y)
 				end
 			end
 		end
@@ -374,7 +399,7 @@ function World:update()
 	love.graphics.setShader()
 	love.graphics.setBlendMode("alpha")
 	love.graphics.setStencilTest()
-	love.graphics.setCanvas(LOVE_LIGHT_LAST_BUFFER)
+	love.graphics.setCanvas(self.LastBuffer)
 
 	self.changed = false
 end
@@ -399,25 +424,25 @@ function World:drawShine()
 	if self.optionShadows and self.isShadows then
 		love.graphics.setColor(255, 255, 255)
 		if self.blur and false then
-			LOVE_LIGHT_LAST_BUFFER = love.graphics.getCanvas()
+			self.LastBuffer = love.graphics.getCanvas()
 			LOVE_LIGHT_BLURV:send("steps", self.blur)
 			LOVE_LIGHT_BLURH:send("steps", self.blur)
 			love.graphics.setBlendMode("alpha")
 			love.graphics.setCanvas(self.shine2)
 			love.graphics.setShader(LOVE_LIGHT_BLURV)
-			love.graphics.draw(self.shine, LOVE_LIGHT_TRANSLATE_X, LOVE_LIGHT_TRANSLATE_Y)
+			love.graphics.draw(self.shine, self.translate.x, self.translate.y)
 			love.graphics.setCanvas(self.shine)
 			love.graphics.setShader(LOVE_LIGHT_BLURH)
-			love.graphics.draw(self.shine2, LOVE_LIGHT_TRANSLATE_X, LOVE_LIGHT_TRANSLATE_Y)
-			love.graphics.setCanvas(LOVE_LIGHT_LAST_BUFFER)
+			love.graphics.draw(self.shine2, self.translate.x, self.translate.y)
+			love.graphics.setCanvas(self.LastBuffer)
 			love.graphics.setBlendMode("multiply")
 			love.graphics.setShader()
-			love.graphics.draw(self.shine, LOVE_LIGHT_TRANSLATE_X, LOVE_LIGHT_TRANSLATE_Y)
+			love.graphics.draw(self.shine, self.translate.x, self.translate.y)
 			love.graphics.setBlendMode("alpha")
 		else
 			love.graphics.setBlendMode("multiply")
 			love.graphics.setShader()
-			love.graphics.draw(self.shine, LOVE_LIGHT_TRANSLATE_X, LOVE_LIGHT_TRANSLATE_Y)
+			love.graphics.draw(self.shine, self.translate.x, self.translate.y)
 			love.graphics.setBlendMode("alpha")
 		end
 	end
@@ -430,25 +455,25 @@ function World:drawShadow()
 	if self.optionShadows and (self.isShadows or self.isLight) then
 		love.graphics.setColor(255, 255, 255)
 		if self.blur then
-			LOVE_LIGHT_LAST_BUFFER = love.graphics.getCanvas()
+			self.LastBuffer = love.graphics.getCanvas()
 			LOVE_LIGHT_BLURV:send("steps", self.blur)
 			LOVE_LIGHT_BLURH:send("steps", self.blur)
 			love.graphics.setBlendMode("alpha")
 			love.graphics.setCanvas(self.shadow2)
 			love.graphics.setShader(LOVE_LIGHT_BLURV)
-			love.graphics.draw(self.shadow, LOVE_LIGHT_TRANSLATE_X, LOVE_LIGHT_TRANSLATE_Y)
+			love.graphics.draw(self.shadow, self.translate.x, self.translate.y)
 			love.graphics.setCanvas(self.shadow)
 			love.graphics.setShader(LOVE_LIGHT_BLURH)
-			love.graphics.draw(self.shadow2, LOVE_LIGHT_TRANSLATE_X, LOVE_LIGHT_TRANSLATE_Y)
-			love.graphics.setCanvas(LOVE_LIGHT_LAST_BUFFER)
+			love.graphics.draw(self.shadow2, self.translate.x, self.translate.y)
+			love.graphics.setCanvas(self.LastBuffer)
 			love.graphics.setBlendMode("multiply")
 			love.graphics.setShader()
-			love.graphics.draw(self.shadow, LOVE_LIGHT_TRANSLATE_X, LOVE_LIGHT_TRANSLATE_Y)
+			love.graphics.draw(self.shadow, self.translate.x, self.translate.y)
 			love.graphics.setBlendMode("alpha")
 		else
 			love.graphics.setBlendMode("multiply")
 			love.graphics.setShader()
-			love.graphics.draw(self.shadow, LOVE_LIGHT_TRANSLATE_X, LOVE_LIGHT_TRANSLATE_Y)
+			love.graphics.draw(self.shadow, self.translate.x, self.translate.y)
 			love.graphics.setBlendMode("alpha")
 		end
 	end
@@ -460,7 +485,7 @@ function World:drawPixelShadow()
 		love.graphics.setColor(255, 255, 255)
 		love.graphics.setBlendMode("multiply")
 		love.graphics.setShader()
-		love.graphics.draw(self.pixelShadow, LOVE_LIGHT_TRANSLATE_X, LOVE_LIGHT_TRANSLATE_Y)
+		love.graphics.draw(self.pixelShadow, self.translate.x, self.translate.y)
 		love.graphics.setBlendMode("alpha")
 	end
 end
@@ -471,7 +496,7 @@ function World:drawMaterial()
 		if Body.material and Body.normal then
 			love.graphics.setColor(255, 255, 255)
 			self.materialShader:send("material", Body.material)
-			love.graphics.draw(Body.normal, Body.x - Body.nx + LOVE_LIGHT_TRANSLATE_X, Body.y - Body.ny + LOVE_LIGHT_TRANSLATE_Y)
+			love.graphics.draw(Body.normal, Body.x - Body.nx + self.translate.x, Body.y - Body.ny + self.translate.y)
 		end
 	end
 	love.graphics.setShader()
@@ -483,23 +508,23 @@ function World:drawGlow()
 		if self.glowBlur == 0.0 then
 			love.graphics.setBlendMode("add")
 			love.graphics.setShader()
-			love.graphics.draw(self.glowMap, LOVE_LIGHT_TRANSLATE_X, LOVE_LIGHT_TRANSLATE_Y)
+			love.graphics.draw(self.glowMap, self.translate.x, self.translate.y)
 			love.graphics.setBlendMode("alpha")
 		else
 			LOVE_LIGHT_BLURV:send("steps", self.glowBlur)
 			LOVE_LIGHT_BLURH:send("steps", self.glowBlur)
-			LOVE_LIGHT_LAST_BUFFER = love.graphics.getCanvas()
+			self.LastBuffer = love.graphics.getCanvas()
 			love.graphics.setBlendMode("add")
 			love.graphics.setCanvas(self.glowMap2)
 			love.graphics.clear()
 			love.graphics.setShader(LOVE_LIGHT_BLURV)
-			love.graphics.draw(self.glowMap, LOVE_LIGHT_TRANSLATE_X, LOVE_LIGHT_TRANSLATE_Y)
+			love.graphics.draw(self.glowMap, self.translate.x, self.translate.y)
 			love.graphics.setCanvas(self.glowMap)
 			love.graphics.setShader(LOVE_LIGHT_BLURH)
-			love.graphics.draw(self.glowMap2, LOVE_LIGHT_TRANSLATE_X, LOVE_LIGHT_TRANSLATE_Y)
-			love.graphics.setCanvas(LOVE_LIGHT_LAST_BUFFER)
+			love.graphics.draw(self.glowMap2, self.translate.x, self.translate.y)
+			love.graphics.setCanvas(self.LastBuffer)
 			love.graphics.setShader()
-			love.graphics.draw(self.glowMap, LOVE_LIGHT_TRANSLATE_X, LOVE_LIGHT_TRANSLATE_Y)
+			love.graphics.draw(self.glowMap, self.translate.x, self.translate.y)
 			love.graphics.setBlendMode("alpha")
 		end
 	end
@@ -507,17 +532,17 @@ end
 
 function World:drawRefraction()
 	if self.optionRefraction and self.isRefraction then
-		LOVE_LIGHT_LAST_BUFFER = love.graphics.getCanvas()
-		if LOVE_LIGHT_LAST_BUFFER then
+		self.LastBuffer = love.graphics.getCanvas()
+		if self.LastBuffer then
 			love.graphics.setColor(255, 255, 255)
 			love.graphics.setBlendMode("alpha")
 			love.graphics.setCanvas(self.refractionMap2)
-			love.graphics.draw(LOVE_LIGHT_LAST_BUFFER, LOVE_LIGHT_TRANSLATE_X, LOVE_LIGHT_TRANSLATE_Y)
-			love.graphics.setCanvas(LOVE_LIGHT_LAST_BUFFER)
+			love.graphics.draw(self.LastBuffer, self.translate.x, self.translate.y)
+			love.graphics.setCanvas(self.LastBuffer)
 			self.refractionShader:send("backBuffer", self.refractionMap2)
 			self.refractionShader:send("refractionStrength", self.refractionStrength)
 			love.graphics.setShader(self.refractionShader)
-			love.graphics.draw(self.refractionMap, LOVE_LIGHT_TRANSLATE_X, LOVE_LIGHT_TRANSLATE_Y)
+			love.graphics.draw(self.refractionMap, self.translate.x, self.translate.y)
 			love.graphics.setShader()
 		end
 	end
@@ -525,18 +550,18 @@ end
 
 function World:drawReflection()
 	if self.optionReflection and self.isReflection then
-		LOVE_LIGHT_LAST_BUFFER = love.graphics.getCanvas()
-		if LOVE_LIGHT_LAST_BUFFER then
+		self.LastBuffer = love.graphics.getCanvas()
+		if self.LastBuffer then
 			love.graphics.setColor(255, 255, 255)
 			love.graphics.setBlendMode("alpha")
 			love.graphics.setCanvas(self.reflectionMap2)
-			love.graphics.draw(LOVE_LIGHT_LAST_BUFFER, LOVE_LIGHT_TRANSLATE_X, LOVE_LIGHT_TRANSLATE_Y)
-			love.graphics.setCanvas(LOVE_LIGHT_LAST_BUFFER)
+			love.graphics.draw(self.LastBuffer, self.translate.x, self.translate.y)
+			love.graphics.setCanvas(self.LastBuffer)
 			self.reflectionShader:send("backBuffer", self.reflectionMap2)
 			self.reflectionShader:send("reflectionStrength", self.reflectionStrength)
 			self.reflectionShader:send("reflectionVisibility", self.reflectionVisibility)
 			love.graphics.setShader(self.reflectionShader)
-			love.graphics.draw(self.reflectionMap, LOVE_LIGHT_TRANSLATE_X, LOVE_LIGHT_TRANSLATE_Y)
+			love.graphics.draw(self.reflectionMap, self.translate.x, self.translate.y)
 			love.graphics.setShader()
 		end
 	end
@@ -567,8 +592,8 @@ function World:clearBodies()
 end
 
 function World:setTranslation(translateX, translateY)
-	LOVE_LIGHT_TRANSLATE_X = translateX
-	LOVE_LIGHT_TRANSLATE_Y = translateY
+	self.translate.x = translateX
+	self.translate.y = translateY
 end
 
 function World:setAmbientColor(red, green, blue)
@@ -603,9 +628,9 @@ end
 
 function World:setBuffer(buffer)
 	if buffer == "render" then
-		love.graphics.setCanvas(LOVE_LIGHT_LAST_BUFFER)
+		love.graphics.setCanvas(self.LastBuffer)
 	else
-		LOVE_LIGHT_LAST_BUFFER = love.graphics.getCanvas()
+		self.LastBuffer = love.graphics.getCanvas()
 	end
 
 	if buffer == "glow" then

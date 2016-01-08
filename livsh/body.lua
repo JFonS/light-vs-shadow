@@ -1,6 +1,8 @@
 local Body = {}
 local BodyMT = {__index = Body}
 
+local HeightMapToNormalMap = love.light.HeightMapToNormalMap
+
 function love.light.newBody(World, type, ...)
 	local args = {...}
 	local Index = #World.body + 1
