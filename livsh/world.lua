@@ -66,7 +66,7 @@ function love.light.newWorld()
 	function self.ShadowStencil()
 		for i, Shadow in pairs(self.ShadowGeometry) do
 			if Shadow.alpha == 1.0 then
-				love.graphics.polygon("fill", unpack(Shadow))
+				love.graphics[Shadow.type]("fill", unpack(Shadow))
 			end
 		end
 		for i, Body in pairs(self.body) do
@@ -124,7 +124,7 @@ function World:update()
 					love.graphics.rectangle("fill", self.translate.x, self.translate.y, love.graphics.getWidth(), love.graphics.getHeight())
 
 					-- draw color shadows
-					love.graphics.setBlendMode("multiply")
+					love.graphics.setBlendMode("alpha")
 					love.graphics.setShader()
 					for k, Shadow in pairs(self.ShadowGeometry) do
 						if Shadow.alpha < 1.0 then
@@ -133,7 +133,7 @@ function World:update()
 								Shadow.green * (1.0 - Shadow.alpha),
 								Shadow.blue * (1.0 - Shadow.alpha)
 							)
-							love.graphics.polygon("fill", unpack(Shadow))
+							love.graphics[Shadow.type]("fill", unpack(Shadow))
 						end
 					end
 

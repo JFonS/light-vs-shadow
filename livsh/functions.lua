@@ -51,7 +51,7 @@ function love.light.calculateShadows(light, body)
 					if not edgeFacingTo[prevIndex] then
 						local Length = shadowLength
 						if Body.z and light.z and light.z > Body.z then
-							Length = Body.z / math.atan2(math.sqrt(math.pow(light.x - curPolygon[k*2-1], 2) + math.pow(light.y - curPolygon[k*2], 2)), light.z)
+							Length = Body.z / math.atan2(light.z, math.sqrt(math.pow(light.x - curPolygon[k*2-1], 2) + math.pow(light.y - curPolygon[k*2], 2)))
 						end
 						
 						local lightVecBackFront = normalize({curPolygon[k*2-1] - light.x, curPolygon[k*2] - light.y})
@@ -72,7 +72,7 @@ function love.light.calculateShadows(light, body)
 						
 						local Length = shadowLength
 						if Body.z and light.z and light.z > Body.z then
-							Length = Body.z / math.atan2(math.sqrt(math.pow(light.x - curPolygon[nextIndex*2-1], 2) + math.pow(light.y - curPolygon[nextIndex*2], 2)), light.z)
+							Length = Body.z / math.atan2(light.z, math.sqrt((light.x - curPolygon[nextIndex*2-1])^2 + (light.y - curPolygon[nextIndex*2])^2))
 						end
 						
 						local lightVecBackFront = normalize({curPolygon[nextIndex*2-1] - light.x, curPolygon[nextIndex*2] - light.y})
@@ -85,7 +85,8 @@ function love.light.calculateShadows(light, body)
 				curShadowGeometry.red = Body.red
 				curShadowGeometry.green = Body.green
 				curShadowGeometry.blue = Body.blue
-				shadowGeometry[#shadowGeometry + 1] = curShadowGeometry
+				curShadowGeometry.type = "polygon"
+				table.insert(shadowGeometry, curShadowGeometry)
 			end
 		elseif Body.shadowType == "circle" then
 			if not Body.castsNoShadow then
@@ -94,33 +95,43 @@ function love.light.calculateShadows(light, body)
 				if length >= Body.radius and length <= light.range then
 					local curShadowGeometry = {}
 					local angle = math.atan2(light.x - (Body.x - Body.ox), (Body.y - Body.oy) - light.y) + math.pi / 2
-					local x2 = ((Body.x - Body.ox) + math.sin(angle) * Body.radius)
-					local y2 = ((Body.y - Body.oy) - math.cos(angle) * Body.radius)
-					local x3 = ((Body.x - Body.ox) - math.sin(angle) * Body.radius)
-					local y3 = ((Body.y - Body.oy) + math.cos(angle) * Body.radius)
-					local L2 = math.sqrt(x2^2 + y2^2)
-					local L3 = math.sqrt(x3^3 + y3^3)
+					local offset = math.acos(Body.radius/length)
 					
 					local Length = shadowLength
 					local h = Body.z or 16
 					if light.z and light.z > h then
-						Length = h / math.atan2(length, light.z)
+						Length = h / math.atan2(light.z, length)
 					end
 
-					curShadowGeometry[1] = x2
-					curShadowGeometry[2] = y2
-					curShadowGeometry[3] = x3
-					curShadowGeometry[4] = y3
+					curShadowGeometry[1] = (Body.x - Body.ox) - math.sin(angle) * Body.radius
+					curShadowGeometry[2] = (Body.y - Body.oy) + math.cos(angle) * Body.radius
+					curShadowGeometry[3] = (Body.x - Body.ox) + math.sin(angle) * Body.radius
+					curShadowGeometry[4] = (Body.y - Body.oy) - math.cos(angle) * Body.radius
 
-					curShadowGeometry[5] = x3 - (light.x - x3) * Length
-					curShadowGeometry[6] = y3 - (light.y - y3) * Length
-					curShadowGeometry[7] = x2 - (light.x - x2) * Length
-					curShadowGeometry[8] = y2 - (light.y - y2) * Length
+					curShadowGeometry[5] = (Body.x - Body.ox) + math.sin(angle + offset) * Length
+					curShadowGeometry[6] = (Body.y - Body.oy) - math.cos(angle + offset) * Length
+					curShadowGeometry[7] = (Body.x - Body.ox) - math.sin(angle - offset) * Length
+					curShadowGeometry[8] = (Body.y - Body.oy) + math.cos(angle - offset) * Length
+					
+					curShadowGeometry.type = "polygon"
 					curShadowGeometry.alpha = Body.alpha
 					curShadowGeometry.red = Body.red
 					curShadowGeometry.green = Body.green
 					curShadowGeometry.blue = Body.blue
-					shadowGeometry[#shadowGeometry + 1] = curShadowGeometry
+					table.insert(shadowGeometry, curShadowGeometry)
+
+					local arcShadowGeometry = {}
+					arcShadowGeometry.type = "arc"
+					arcShadowGeometry.alpha = Body.alpha
+					arcShadowGeometry.red = Body.red
+					arcShadowGeometry.green = Body.green
+					arcShadowGeometry.blue = Body.blue
+					arcShadowGeometry[1] = (curShadowGeometry[5] + curShadowGeometry[7])/2
+					arcShadowGeometry[2] = (curShadowGeometry[6] + curShadowGeometry[8])/2
+					arcShadowGeometry[3] = math.sqrt((curShadowGeometry[5] - arcShadowGeometry[1])^2 + (curShadowGeometry[6] - arcShadowGeometry[2])^2)
+					arcShadowGeometry[4] = angle - math.pi/2
+					arcShadowGeometry[5] = angle + math.pi/2
+					table.insert(shadowGeometry, arcShadowGeometry)
 				end
 			end
 		end

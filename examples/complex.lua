@@ -661,6 +661,7 @@ function love.keypressed(k, u)
 		-- add rectangle
 		phyCnt = phyCnt + 1
 		phyLight[phyCnt] = lightWorld:newPolygon()
+		phyLight[phyCnt].z = 30
 		phyLight[phyCnt]:setAlpha(0.5)
 		phyLight[phyCnt]:setGlowStrength(1.0)
 		phyBody[phyCnt] = love.physics.newBody(physicWorld, mx, my, "dynamic")

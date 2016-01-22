@@ -24,13 +24,14 @@ function love.load()
 	end
 
 	-- create light
-	lightMouse = lightWorld:newLight(0, 0, 255, 255, 255, 300)
+	lightMouse = lightWorld:newLight(0, 0, 255, 255, 255, 800)
 	lightMouse:setGlowStrength(0.3)
 	--lightMouse.setSmooth(0.01)
 
 	-- create shadow bodys
 	circleTest = lightWorld:newCircle(256, 256, 16)
 	rectangleTest = lightWorld:newRectangle(512, 512, 64, 64)
+	rectangleTest.z = 10
 	imageTest = lightWorld:newImage(image, 64, 64)
 	imageTest:setNormalMap(image_normal)
 	--imageTest:setGlowMap(glow)
