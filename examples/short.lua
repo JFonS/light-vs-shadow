@@ -10,16 +10,17 @@ function love.load()
 
 	-- create light world
 	lightWorld = love.light.newWorld()
+	--lightWorld:setTranslation(0, 32)
 	lightWorld:setAmbientColor(60, 60, 60)
 	lightWorld:setRefractionStrength(32.0)
 	lightWorld.isPixelShadows = true
 	
 	function lightWorld:drawObjects()
 		love.graphics.setColor(63, 255, 127)
-		love.graphics.circle("fill", circleTest:getX(), circleTest:getY(), circleTest:getRadius())
-		love.graphics.polygon("fill", rectangleTest:getPoints())
+		love.graphics.circle("fill", circleTest:getX() - lightWorld.translate.x, circleTest:getY() - lightWorld.translate.y, circleTest:getRadius())
+		love.graphics.polygon("fill", rectangleTest:getVertices())
 		love.graphics.setColor(255, 255, 255)
-		love.graphics.draw(image, 64, 64)
+		love.graphics.draw(image, 64 - lightWorld.translate.x, 64 - lightWorld.translate.y)
 	end
 
 	-- create light
@@ -51,7 +52,7 @@ end
 
 function love.update(dt)
 	love.window.setTitle("Light vs. Shadow Engine (FPS:" .. love.timer.getFPS() .. ")")
-	lightMouse:setPosition(love.mouse.getX(), love.mouse.getY())
+	lightMouse:setPosition(love.mouse.getX(), love.mouse.getY(), 50)
 end
 
 function love.draw()

@@ -166,13 +166,13 @@ function exf.clear()
 end
 
 function exf.resume()
-    load = nil
-    love.update = exf.update
-    love.draw = exf.draw
-    love.keypressed = exf.keypressed
-    love.keyreleased = exf.keyreleased
-    love.mousepressed = exf.mousepressed
-    love.mousereleased = exf.mousereleased
+   load = nil
+   love.update = exf.update
+   love.draw = exf.draw
+   love.keypressed = exf.keypressed
+   love.keyreleased = exf.keyreleased
+   love.mousepressed = exf.mousepressed
+   love.mousereleased = exf.mousereleased
 
     love.mouse.setVisible(true)
     love.window.setTitle("LOVE Example Browser")

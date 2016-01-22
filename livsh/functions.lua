@@ -9,7 +9,7 @@ local function dot(v1, v2)
 end
 
 local function lengthSqr(v)
-	return v[1] * v[1] + v[2] * v[2]
+	return v[1] ^ 2 + v[2] ^ 2
 end
 
 local function length(v)
@@ -33,51 +33,64 @@ function love.light.calculateShadows(light, body)
 					normal = normalize(normal)
 					lightToPoint = normalize(lightToPoint)
 
-					local dotProduct = dot(normal, lightToPoint)
-					if dotProduct > 0 then table.insert(edgeFacingTo, true)
-					else table.insert(edgeFacingTo, false) end
+					table.insert(edgeFacingTo, dot(normal, lightToPoint) > 0)
 				end
 
-				local curShadowGeometry = {}
+				local curShadowGeometry =  {}
 				for k = 1, #edgeFacingTo do
+					local prevIndex = k - 1
+					if prevIndex <= 0 then
+						prevIndex = #edgeFacingTo + prevIndex
+					end
+					
 					local nextIndex = (k + 1) % #edgeFacingTo
-					if nextIndex == 0 then nextIndex = #edgeFacingTo end
-					if edgeFacingTo[k] and not edgeFacingTo[nextIndex] then
-						curShadowGeometry[1] = curPolygon[nextIndex*2-1]
-						curShadowGeometry[2] = curPolygon[nextIndex*2]
+					if nextIndex == 0 then
+						nextIndex = #edgeFacingTo
+					end
 
-						local lightVecFrontBack = normalize({curPolygon[nextIndex*2-1] - light.x, curPolygon[nextIndex*2] - light.y})
-						curShadowGeometry[3] = curShadowGeometry[1] + lightVecFrontBack[1] * shadowLength
-						curShadowGeometry[4] = curShadowGeometry[2] + lightVecFrontBack[2] * shadowLength
+					if not edgeFacingTo[prevIndex] then
+						local Length = shadowLength
+						if Body.z and light.z and light.z > Body.z then
+							Length = Body.z / math.atan2(math.sqrt(math.pow(light.x - curPolygon[k*2-1], 2) + math.pow(light.y - curPolygon[k*2], 2)), light.z)
+						end
+						
+						local lightVecBackFront = normalize({curPolygon[k*2-1] - light.x, curPolygon[k*2] - light.y})
+						table.insert(curShadowGeometry, curPolygon[k*2-1] + lightVecBackFront[1] * Length)
+						table.insert(curShadowGeometry, curPolygon[k*2] + lightVecBackFront[2] * Length)
+					end
 
-					elseif not edgeFacingTo[k] and edgeFacingTo[nextIndex] then
-						curShadowGeometry[7] = curPolygon[nextIndex*2-1]
-						curShadowGeometry[8] = curPolygon[nextIndex*2]
-
+					if edgeFacingTo[k] then
+						table.insert(curShadowGeometry, curPolygon[k*2-1])
+						table.insert(curShadowGeometry, curPolygon[k*2])
+					end
+					
+					if not edgeFacingTo[nextIndex] then
+						if edgeFacingTo[k] then
+							table.insert(curShadowGeometry, curPolygon[nextIndex*2-1])
+							table.insert(curShadowGeometry, curPolygon[nextIndex*2])
+						end
+						
+						local Length = shadowLength
+						if Body.z and light.z and light.z > Body.z then
+							Length = Body.z / math.atan2(math.sqrt(math.pow(light.x - curPolygon[nextIndex*2-1], 2) + math.pow(light.y - curPolygon[nextIndex*2], 2)), light.z)
+						end
+						
 						local lightVecBackFront = normalize({curPolygon[nextIndex*2-1] - light.x, curPolygon[nextIndex*2] - light.y})
-						curShadowGeometry[5] = curShadowGeometry[7] + lightVecBackFront[1] * shadowLength
-						curShadowGeometry[6] = curShadowGeometry[8] + lightVecBackFront[2] * shadowLength
+						table.insert(curShadowGeometry, curPolygon[nextIndex*2-1] + lightVecBackFront[1] * Length)
+						table.insert(curShadowGeometry, curPolygon[nextIndex*2] + lightVecBackFront[2] * Length)
 					end
 				end
-				if  curShadowGeometry[1]
-					and curShadowGeometry[2]
-					and curShadowGeometry[3]
-					and curShadowGeometry[4]
-					and curShadowGeometry[5]
-					and curShadowGeometry[6]
-					and curShadowGeometry[7]
-					and curShadowGeometry[8]
-				then
-					curShadowGeometry.alpha = Body.alpha
-					curShadowGeometry.red = Body.red
-					curShadowGeometry.green = Body.green
-					curShadowGeometry.blue = Body.blue
-					shadowGeometry[#shadowGeometry + 1] = curShadowGeometry
-				end
+
+				curShadowGeometry.alpha = Body.alpha
+				curShadowGeometry.red = Body.red
+				curShadowGeometry.green = Body.green
+				curShadowGeometry.blue = Body.blue
+				shadowGeometry[#shadowGeometry + 1] = curShadowGeometry
 			end
 		elseif Body.shadowType == "circle" then
 			if not Body.castsNoShadow then
 				local length = math.sqrt(math.pow(light.x - (Body.x - Body.ox), 2) + math.pow(light.y - (Body.y - Body.oy), 2))
+				
 				if length >= Body.radius and length <= light.range then
 					local curShadowGeometry = {}
 					local angle = math.atan2(light.x - (Body.x - Body.ox), (Body.y - Body.oy) - light.y) + math.pi / 2
@@ -85,16 +98,24 @@ function love.light.calculateShadows(light, body)
 					local y2 = ((Body.y - Body.oy) - math.cos(angle) * Body.radius)
 					local x3 = ((Body.x - Body.ox) - math.sin(angle) * Body.radius)
 					local y3 = ((Body.y - Body.oy) + math.cos(angle) * Body.radius)
+					local L2 = math.sqrt(x2^2 + y2^2)
+					local L3 = math.sqrt(x3^3 + y3^3)
+					
+					local Length = shadowLength
+					local h = Body.z or 16
+					if light.z and light.z > h then
+						Length = h / math.atan2(length, light.z)
+					end
 
 					curShadowGeometry[1] = x2
 					curShadowGeometry[2] = y2
 					curShadowGeometry[3] = x3
 					curShadowGeometry[4] = y3
 
-					curShadowGeometry[5] = x3 - (light.x - x3) * shadowLength
-					curShadowGeometry[6] = y3 - (light.y - y3) * shadowLength
-					curShadowGeometry[7] = x2 - (light.x - x2) * shadowLength
-					curShadowGeometry[8] = y2 - (light.y - y2) * shadowLength
+					curShadowGeometry[5] = x3 - (light.x - x3) * Length
+					curShadowGeometry[6] = y3 - (light.y - y3) * Length
+					curShadowGeometry[7] = x2 - (light.x - x2) * Length
+					curShadowGeometry[8] = y2 - (light.y - y2) * Length
 					curShadowGeometry.alpha = Body.alpha
 					curShadowGeometry.red = Body.red
 					curShadowGeometry.green = Body.green

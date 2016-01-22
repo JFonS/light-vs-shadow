@@ -172,6 +172,7 @@ function love.light.newBody(World, type, ...)
 	self.green = 0
 	self.blue = 0
 	self.alpha = 1.0
+	self.angle = 0
 	self.glowRed = 255
 	self.glowGreen = 255
 	self.glowBlue = 255
@@ -193,6 +194,36 @@ function Body:refresh()
 		self.data[7] = self.x - self.ox
 		self.data[8] = self.y - self.oy + self.height
 	end
+end
+
+function Body:getVertices()
+	local Vertices = {}
+	
+	if self.type == "rectangle" then
+		local Rad = math.rad(self.angle)
+		local Length = math.sqrt(self.width^2 + self.height^2)/2
+		table.insert(Vertices, self.x + math.cos(Rad + math.atan2(self.height, self.width) - math.pi/2) * Length)
+		table.insert(Vertices, self.y + math.sin(Rad + math.atan2(self.height, self.width) - math.pi/2) * Length)
+		
+		table.insert(Vertices, self.x + math.cos(Rad + math.atan2(self.height, self.width) - math.pi/2) * Length)
+		table.insert(Vertices, self.y - math.sin(Rad - math.atan2(self.height, self.width) - math.pi/2) * Length)
+		
+		table.insert(Vertices, self.x + math.cos(Rad - math.atan2(self.height, self.width) - math.pi/2) * Length)
+		table.insert(Vertices, self.y - math.sin(Rad - math.atan2(self.height, self.width) - math.pi/2) * Length)
+		
+		table.insert(Vertices, self.x + math.cos(Rad - math.atan2(self.height, self.width) - math.pi/2) * Length)
+		table.insert(Vertices, self.y + math.sin(Rad + math.atan2(self.height, self.width) - math.pi/2) * Length)
+	elseif self.type == "polygon" then
+		local Data = self.data
+		for i = 1, #Data, 2 do
+			local Angle = math.atan2(Data[i +1], Data[i]) - math.pi/2
+			local Length = math.sqrt(Data[i]^2 + Data[i + 1]^2)
+			table.insert(Vertices, math.sin(Angle) * Length)
+			table.insert(Vertices, -math.cos(Angle) * Length)
+		end
+	end
+	
+	return Vertices
 end
 
 function Body:setPosition(x, y)
