@@ -436,8 +436,8 @@ function love.draw()
 	love.postshader.draw()
 end
 
-function love.mousepressed(x, y, c)
-	if c == "m" then
+function love.mousepressed(x, y, c, istouch)
+	if c == 1 then
 		-- add light
 		local r = lightWorld:getLightCount() % 3
 		local light
@@ -449,9 +449,9 @@ function love.mousepressed(x, y, c)
 		else
 			light = lightWorld:newLight(x, y, 31, 63, 127, lightRange)
 		end
-		light.setSmooth(lightSmooth)
+		light:setSmooth(lightSmooth)
 		light:setGlowStrength(0.3)
-	elseif c == "l" then
+	elseif c == 2 then
 		-- add rectangle
 		math.randomseed(love.timer.getTime())
 		phyCnt = phyCnt + 1
@@ -460,7 +460,7 @@ function love.mousepressed(x, y, c)
 		phyShape[phyCnt] = love.physics.newRectangleShape(0, 0, math.random(32, 64), math.random(32, 64))
 		phyFixture[phyCnt] = love.physics.newFixture(phyBody[phyCnt], phyShape[phyCnt])
 		phyFixture[phyCnt]:setRestitution(0.5)
-	elseif c == "r" then
+	elseif c == 3 then
 		-- add circle
 		math.randomseed(love.timer.getTime())
 		cRadius = math.random(8, 32)
@@ -470,18 +470,23 @@ function love.mousepressed(x, y, c)
 		phyShape[phyCnt] = love.physics.newCircleShape(0, 0, cRadius)
 		phyFixture[phyCnt] = love.physics.newFixture(phyBody[phyCnt], phyShape[phyCnt])
 		phyFixture[phyCnt]:setRestitution(0.5)
-	elseif c == "wu" then
+	end
+end
+
+function love.wheelmoved(x,y)
+	if y > 0 then
 		if lightSmooth < 4.0 then
 			lightSmooth = lightSmooth * 1.1
-			mouseLight.setSmooth(lightSmooth)
+			mouseLight:setSmooth(lightSmooth)
 		end
-	elseif c == "wd" then
+	elseif y < 0 then
 		if lightSmooth > 0.5 then
 			lightSmooth = lightSmooth / 1.1
-			mouseLight.setSmooth(lightSmooth)
+			mouseLight:setSmooth(lightSmooth)
 		end
 	end
 end
+
 
 function love.keypressed(k, u)
 	-- debug options
@@ -528,7 +533,7 @@ function love.keypressed(k, u)
 		lightWorld:clearLights()
 		mouseLight = lightWorld:newLight(0, 0, 255, 191, 127, lightRange)
 		mouseLight:setGlowStrength(0.3)
-		mouseLight.setSmooth(lightSmooth)
+		mouseLight:setSmooth(lightSmooth)
 	elseif k == "1" then
 		-- add image
 		phyCnt = phyCnt + 1
